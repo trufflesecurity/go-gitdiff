@@ -15,54 +15,54 @@ const commitPrefix = "commit"
 // Parse parses a patch with changes to one or more files. Any content before
 // the first file is returned as the second value. If an error occurs while
 // parsing, it returns all files parsed before the error.
-func Parse(r io.Reader) ([]*File, string, error) {
+func Parse(r io.Reader) (<-chan *File, error) {
 	p := newParser(r)
+	out := make(chan *File)
 
 	if err := p.Next(); err != nil {
 		if err == io.EOF {
-			return nil, "", nil
+			return out, nil
 		}
-		return nil, "", err
+		return out, err
 	}
 
-	var preamble string
-	var files []*File
-	var ph *PatchHeader
-	for {
-		file, pre, err := p.ParseNextFileHeader()
-		if err != nil {
-			return files, preamble, err
-		}
-
-		if strings.Contains(pre, commitPrefix) {
-			ph, _ = ParsePatchHeader(pre)
-		}
-
-		if file == nil {
-			break
-		}
-
-		for _, fn := range []func(*File) (int, error){
-			p.ParseTextFragments,
-			p.ParseBinaryFragments,
-		} {
-			n, err := fn(file)
+	go func() {
+		ph := &PatchHeader{}
+		for {
+			file, pre, err := p.ParseNextFileHeader()
 			if err != nil {
-				return files, preamble, err
+				out <- file
+				return
 			}
-			if n > 0 {
+
+			if strings.Contains(pre, commitPrefix) {
+				ph, _ = ParsePatchHeader(pre)
+			}
+
+			if file == nil {
 				break
 			}
-		}
 
-		file.PatchHeader = ph
-		if len(files) == 0 {
-			preamble = pre
-		}
-		files = append(files, file)
-	}
+			for _, fn := range []func(*File) (int, error){
+				p.ParseTextFragments,
+				p.ParseBinaryFragments,
+			} {
+				n, err := fn(file)
+				if err != nil {
+					return
+				}
+				if n > 0 {
+					break
+				}
+			}
 
-	return files, preamble, nil
+			file.PatchHeader = ph
+			out <- file
+		}
+		close(out)
+	}()
+
+	return out, nil
 }
 
 // TODO(bkeyes): consider exporting the parser type with configuration

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 )
 
 // File describes changes to a single file. It can be either a text file or a
@@ -24,7 +25,7 @@ type File struct {
 	NewOIDPrefix string
 	Score        int
 
-	PatchHeader  *PatchHeader
+	PatchHeader *PatchHeader
 
 	// TextFragments contains the fragments describing changes to a text file. It
 	// may be empty if the file is empty or if only the mode changes.
@@ -57,6 +58,16 @@ type TextFragment struct {
 	TrailingContext int64
 
 	Lines []Line
+}
+
+func (f *TextFragment) Raw(op LineOp) string {
+	sb := strings.Builder{}
+	for _, l := range f.Lines {
+		if l.Op == op {
+			sb.WriteString(l.Line)
+		}
+	}
+	return sb.String()
 }
 
 // Header returns the canonical header of this fragment.
