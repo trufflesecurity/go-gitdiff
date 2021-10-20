@@ -20,4 +20,4 @@ issues:
 
 linter-settings:
   goimports:
-    local-prefixes: github.com/bluekeyes/go-gitdiff
+    local-prefixes: github.com/gitleaks/go-gitdiff
