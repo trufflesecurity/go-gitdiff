@@ -24,6 +24,8 @@ type File struct {
 	NewOIDPrefix string
 	Score        int
 
+	PatchHeader  *PatchHeader
+
 	// TextFragments contains the fragments describing changes to a text file. It
 	// may be empty if the file is empty or if only the mode changes.
 	TextFragments []*TextFragment
