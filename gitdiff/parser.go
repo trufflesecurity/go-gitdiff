@@ -7,7 +7,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"strings"
 )
+
+const commitPrefix = "commit"
 
 // Parse parses a patch with changes to one or more files. Any content before
 // the first file is returned as the second value. If an error occurs while
@@ -24,11 +27,17 @@ func Parse(r io.Reader) ([]*File, string, error) {
 
 	var preamble string
 	var files []*File
+	var ph *PatchHeader
 	for {
 		file, pre, err := p.ParseNextFileHeader()
 		if err != nil {
 			return files, preamble, err
 		}
+
+		if strings.Contains(pre, commitPrefix) {
+			ph, _ = ParsePatchHeader(pre)
+		}
+
 		if file == nil {
 			break
 		}
@@ -46,6 +55,7 @@ func Parse(r io.Reader) ([]*File, string, error) {
 			}
 		}
 
+		file.PatchHeader = ph
 		if len(files) == 0 {
 			preamble = pre
 		}
