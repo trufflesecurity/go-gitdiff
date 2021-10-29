@@ -27,11 +27,12 @@ func Parse(r io.Reader) (<-chan *File, error) {
 	}
 
 	go func() {
+		defer close(out)
+
 		ph := &PatchHeader{}
 		for {
 			file, pre, err := p.ParseNextFileHeader()
 			if err != nil {
-				out <- file
 				return
 			}
 
@@ -59,7 +60,6 @@ func Parse(r io.Reader) (<-chan *File, error) {
 			file.PatchHeader = ph
 			out <- file
 		}
-		close(out)
 	}()
 
 	return out, nil
