@@ -20,6 +20,7 @@ func Parse(r io.Reader) (<-chan *File, error) {
 	out := make(chan *File)
 
 	if err := p.Next(); err != nil {
+		close(out)
 		if err == io.EOF {
 			return out, nil
 		}
