@@ -34,7 +34,11 @@ func Parse(r io.Reader) (<-chan *File, error) {
 		for {
 			file, pre, err := p.ParseNextFileHeader()
 			if err != nil {
-				return
+				if err == io.EOF {
+					return
+				}
+				p.Next()
+				continue
 			}
 
 			if strings.Contains(pre, commitPrefix) {
