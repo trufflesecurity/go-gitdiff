@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"regexp"
 	"strconv"
 	"strings"
 )
+
+var binaryRegexp = regexp.MustCompile(`^Binary files (/dev/null|a/(.+)|"a/(.+)") and (/dev/null|b/(.+)|"b/(.+)") differ\s*$`)
 
 func (p *parser) ParseBinaryFragments(f *File) (n int, err error) {
 	isBinary, hasData, err := p.ParseBinaryMarker()
@@ -56,7 +59,9 @@ func (p *parser) ParseBinaryMarker() (isBinary bool, hasData bool, err error) {
 	case "Binary files differ\n":
 	case "Files differ\n":
 	default:
-		return false, false, nil
+		if !binaryRegexp.MatchString(p.Line(0)) {
+			return false, false, nil
+		}
 	}
 
 	if err = p.Next(); err != nil && err != io.EOF {
