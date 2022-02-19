@@ -34,11 +34,38 @@ func TestParsePatchIdentity(t *testing.T) {
 		},
 		"missingName": {
 			Input: "<mhaypenny@example.com>",
-			Err:   "invalid identity",
+			Output: PatchIdentity{
+				Name:  "",
+				Email: "mhaypenny@example.com",
+			},
 		},
 		"missingEmail": {
 			Input: "Morton Haypenny",
-			Err:   "invalid identity",
+			Output: PatchIdentity{
+				Name:  "",
+				Email: "",
+			},
+		},
+		"emptyEmail": {
+			Input: "Morton Haypenny <>",
+			Output: PatchIdentity{
+				Name:  "Morton Haypenny",
+				Email: "",
+			},
+		},
+		"missingNameAndEmail": {
+			Input: "",
+			Output: PatchIdentity{
+				Name:  "",
+				Email: "",
+			},
+		},
+		"emptyNameAndEmail": {
+			Input: " <>",
+			Output: PatchIdentity{
+				Name:  "",
+				Email: "",
+			},
 		},
 		"unclosedEmail": {
 			Input: "Morton Haypenny <mhaypenny@example.com",
