@@ -30,6 +30,26 @@ func TestParseBinaryMarker(t *testing.T) {
 			IsBinary: false,
 			HasData:  false,
 		},
+		"binaryPatchCreated": {
+			Input:    "Binary files /dev/null and b/path/to/file.ext differ\n",
+			IsBinary: true,
+			HasData:  false,
+		},
+		"binaryPatchModified": {
+			Input:    "Binary files a/path/to/file.ext and b/path/to/file.ext differ\n",
+			IsBinary: true,
+			HasData:  false,
+		},
+		"binaryPatchModifiedQuoted": {
+			Input:    "Binary files \"a/path/to/file.ext\" and \"b/path/to/file.ext\" differ\n",
+			IsBinary: true,
+			HasData:  false,
+		},
+		"binaryPatchDeleted": {
+			Input:    "Binary files a/path/to/file.ext and /dev/null differ\n",
+			IsBinary: true,
+			HasData:  false,
+		},
 	}
 
 	for name, test := range tests {
