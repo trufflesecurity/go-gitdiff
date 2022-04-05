@@ -53,11 +53,13 @@ func (p *parser) ParseBinaryFragments(f *File) (n int, err error) {
 }
 
 func (p *parser) ParseBinaryMarker() (isBinary bool, hasData bool, err error) {
-	switch p.Line(0) {
-	case "GIT binary patch\n":
+	line := p.Line(0)
+	switch {
+	case line == "GIT binary patch\n":
 		hasData = true
-	case "Binary files differ\n":
-	case "Files differ\n":
+	case line == "Binary files differ\n":
+	case line == "Files differ\n":
+	case strings.HasPrefix(line, "Binary files ") && strings.HasSuffix(line, "differ\n"):
 	default:
 		if !binaryRegexp.MatchString(p.Line(0)) {
 			return false, false, nil
