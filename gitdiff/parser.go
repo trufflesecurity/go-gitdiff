@@ -16,7 +16,7 @@ const commitPrefix = "commit"
 // Parse parses a patch with changes to one or more files. Any content before
 // the first file is returned as the second value. If an error occurs while
 // parsing, it returns all files parsed before the error.
-func Parse(cmd *exec.Cmd, r io.Reader) (<-chan *File, error) {
+func Parse(cmd *exec.Cmd, r io.ReadCloser) (<-chan *File, error) {
 	p := newParser(r)
 	out := make(chan *File)
 
@@ -28,8 +28,9 @@ func Parse(cmd *exec.Cmd, r io.Reader) (<-chan *File, error) {
 		return out, err
 	}
 
-	go func(cmd *exec.Cmd, out chan *File) {
+	go func(cmd *exec.Cmd, out chan *File, r io.ReadCloser) {
 		defer close(out)
+		defer r.Close()
 		defer cmd.Wait()
 
 		ph := &PatchHeader{}
@@ -67,7 +68,7 @@ func Parse(cmd *exec.Cmd, r io.Reader) (<-chan *File, error) {
 			file.PatchHeader = ph
 			out <- file
 		}
-	}(cmd, out)
+	}(cmd, out, r)
 
 	return out, nil
 }
