@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"os/exec"
 	"reflect"
 	"testing"
 )
@@ -460,7 +461,9 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 				t.Fatalf("unexpected error opening input file: %v", err)
 			}
 
-			files, pre, err := Parse(f)
+			cmd := exec.Command("echo", "hello")
+
+			files, err := Parse(cmd, f)
 			if test.Err {
 				if err == nil || err == io.EOF {
 					t.Fatalf("expected error parsing patch, but got %v", err)
@@ -473,9 +476,6 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 
 			if len(test.Output) != len(files) {
 				t.Fatalf("incorrect number of parsed files: expected %d, actual %d", len(test.Output), len(files))
-			}
-			if test.Preamble != pre {
-				t.Errorf("incorrect preamble\nexpected: %q\n  actual: %q", test.Preamble, pre)
 			}
 			for i := range test.Output {
 				if !reflect.DeepEqual(test.Output[i], files[i]) {
