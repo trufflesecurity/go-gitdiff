@@ -30,8 +30,8 @@ func Parse(cmd *exec.Cmd, r io.ReadCloser) (<-chan *File, error) {
 
 	go func(cmd *exec.Cmd, out chan *File, r io.ReadCloser) {
 		defer close(out)
-		defer r.Close()
 		defer cmd.Wait()
+		defer r.Close()
 
 		ph := &PatchHeader{}
 		for {
