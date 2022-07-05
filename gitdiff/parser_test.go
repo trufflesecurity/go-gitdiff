@@ -11,6 +11,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestLineOperations(t *testing.T) {
@@ -397,6 +398,16 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 			InputFile: "testdata/one_file.patch",
 			Output: []*File{
 				{
+					PatchHeader: &PatchHeader{
+						SHA: "5d9790fec7d95aa223f3d20936340bf55ff3dcbe",
+						Author: &PatchIdentity{
+							Name:  "Morton Haypenny",
+							Email: "mhaypenny@example.com",
+						},
+						AuthorDate: asTime("2019-04-02T22:55:40-07:00"),
+						Title:      "A file with multiple fragments.",
+						Body:       "The content is arbitrary.",
+					},
 					OldName:       "dir/file1.txt",
 					NewName:       "dir/file1.txt",
 					OldMode:       os.FileMode(0100644),
@@ -411,6 +422,16 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 			InputFile: "testdata/two_files.patch",
 			Output: []*File{
 				{
+					PatchHeader: &PatchHeader{
+						SHA: "5d9790fec7d95aa223f3d20936340bf55ff3dcbe",
+						Author: &PatchIdentity{
+							Name:  "Morton Haypenny",
+							Email: "mhaypenny@example.com",
+						},
+						AuthorDate: asTime("2019-04-02T22:55:40-07:00"),
+						Title:      "A file with multiple fragments.",
+						Body:       "The content is arbitrary.",
+					},
 					OldName:       "dir/file1.txt",
 					NewName:       "dir/file1.txt",
 					OldMode:       os.FileMode(0100644),
@@ -419,6 +440,16 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 					TextFragments: textFragments,
 				},
 				{
+					PatchHeader: &PatchHeader{
+						SHA: "5d9790fec7d95aa223f3d20936340bf55ff3dcbe",
+						Author: &PatchIdentity{
+							Name:  "Morton Haypenny",
+							Email: "mhaypenny@example.com",
+						},
+						AuthorDate: asTime("2019-04-02T22:55:40-07:00"),
+						Title:      "A file with multiple fragments.",
+						Body:       "The content is arbitrary.",
+					},
 					OldName:       "dir/file2.txt",
 					NewName:       "dir/file2.txt",
 					OldMode:       os.FileMode(0100644),
@@ -433,6 +464,15 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 			InputFile: "testdata/new_binary_file.patch",
 			Output: []*File{
 				{
+					PatchHeader: &PatchHeader{
+						SHA: "5d9790fec7d95aa223f3d20936340bf55ff3dcbe",
+						Author: &PatchIdentity{
+							Name:  "Morton Haypenny",
+							Email: "mhaypenny@example.com",
+						},
+						AuthorDate: asTime("2019-04-02T22:55:40-07:00"),
+						Title:      "A binary file with the first 10 fibonacci numbers.",
+					},
 					OldName:      "",
 					NewName:      "dir/ten.bin",
 					NewMode:      os.FileMode(0100644),
@@ -555,4 +595,12 @@ func newTestParser(input string, init bool) *parser {
 		_ = p.Next()
 	}
 	return p
+}
+
+func asTime(s string) time.Time {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		panic(err)
+	}
+	return t
 }
