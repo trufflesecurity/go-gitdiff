@@ -234,9 +234,13 @@ func (at applyTest) run(t *testing.T, apply func(io.Writer, *Applier, *File) err
 
 	cmd := exec.Command("echo", "hello")
 
-	files, err := Parse(cmd, io.NopCloser(bytes.NewReader(patch)))
+	fileChan, err := Parse(cmd, io.NopCloser(bytes.NewReader(patch)))
 	if err != nil {
 		t.Fatalf("failed to parse patch file: %v", err)
+	}
+	var files []*File
+	for file := range fileChan {
+		files = append(files, file)
 	}
 	if len(files) != 1 {
 		t.Fatalf("patch should contain exactly one file, but it has %d", len(files))
