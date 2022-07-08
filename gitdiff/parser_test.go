@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"reflect"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestLineOperations(t *testing.T) {
@@ -395,6 +398,16 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 			InputFile: "testdata/one_file.patch",
 			Output: []*File{
 				{
+					PatchHeader: &PatchHeader{
+						SHA: "5d9790fec7d95aa223f3d20936340bf55ff3dcbe",
+						Author: &PatchIdentity{
+							Name:  "Morton Haypenny",
+							Email: "mhaypenny@example.com",
+						},
+						AuthorDate: asTime("2019-04-02T22:55:40-07:00"),
+						Title:      "A file with multiple fragments.",
+						Body:       "The content is arbitrary.",
+					},
 					OldName:       "dir/file1.txt",
 					NewName:       "dir/file1.txt",
 					OldMode:       os.FileMode(0100644),
@@ -409,6 +422,16 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 			InputFile: "testdata/two_files.patch",
 			Output: []*File{
 				{
+					PatchHeader: &PatchHeader{
+						SHA: "5d9790fec7d95aa223f3d20936340bf55ff3dcbe",
+						Author: &PatchIdentity{
+							Name:  "Morton Haypenny",
+							Email: "mhaypenny@example.com",
+						},
+						AuthorDate: asTime("2019-04-02T22:55:40-07:00"),
+						Title:      "A file with multiple fragments.",
+						Body:       "The content is arbitrary.",
+					},
 					OldName:       "dir/file1.txt",
 					NewName:       "dir/file1.txt",
 					OldMode:       os.FileMode(0100644),
@@ -417,6 +440,16 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 					TextFragments: textFragments,
 				},
 				{
+					PatchHeader: &PatchHeader{
+						SHA: "5d9790fec7d95aa223f3d20936340bf55ff3dcbe",
+						Author: &PatchIdentity{
+							Name:  "Morton Haypenny",
+							Email: "mhaypenny@example.com",
+						},
+						AuthorDate: asTime("2019-04-02T22:55:40-07:00"),
+						Title:      "A file with multiple fragments.",
+						Body:       "The content is arbitrary.",
+					},
 					OldName:       "dir/file2.txt",
 					NewName:       "dir/file2.txt",
 					OldMode:       os.FileMode(0100644),
@@ -431,6 +464,15 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 			InputFile: "testdata/new_binary_file.patch",
 			Output: []*File{
 				{
+					PatchHeader: &PatchHeader{
+						SHA: "5d9790fec7d95aa223f3d20936340bf55ff3dcbe",
+						Author: &PatchIdentity{
+							Name:  "Morton Haypenny",
+							Email: "mhaypenny@example.com",
+						},
+						AuthorDate: asTime("2019-04-02T22:55:40-07:00"),
+						Title:      "A binary file with the first 10 fibonacci numbers.",
+					},
 					OldName:      "",
 					NewName:      "dir/ten.bin",
 					NewMode:      os.FileMode(0100644),
@@ -463,7 +505,7 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 
 			cmd := exec.Command("echo", "hello")
 
-			files, err := Parse(cmd, f)
+			fileChan, err := Parse(cmd, f)
 			if test.Err {
 				if err == nil || err == io.EOF {
 					t.Fatalf("expected error parsing patch, but got %v", err)
@@ -472,6 +514,10 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 			}
 			if err != nil {
 				t.Fatalf("unexpected error parsing patch: %v", err)
+			}
+			var files []*File
+			for file := range fileChan {
+				files = append(files, file)
 			}
 
 			if len(test.Output) != len(files) {
@@ -488,10 +534,73 @@ Date:   Tue Apr 2 22:55:40 2019 -0700
 	}
 }
 
+func BenchmarkParse(b *testing.B) {
+	var inputDiff string
+	{
+		builder := strings.Builder{}
+		builder.WriteString(`commit 5d9790fec7d95aa223f3d20936340bf55ff3dcbe
+Author: Morton Haypenny <mhaypenny@example.com>
+Date:   Tue Apr 2 22:55:40 2019 -0700
+
+    A file with multiple fragments.
+
+    The content is arbitrary.
+
+`)
+		fileDiff := func(i int) string {
+			return fmt.Sprintf(`diff --git a/dir/file%[1]d.txt b/dir/file%[1]d.txt
+index ebe9fa54..fe103e1d 100644
+--- a/dir/file%[1]d.txt
++++ b/dir/file%[1]d.txt
+@@ -3,6 +3,8 @@ fragment 1
+ context line
+-old line 1
+-old line 2
+ context line
++new line 1
++new line 2
++new line 3
+ context line
+-old line 3
++new line 4
++new line 5
+@@ -31,2 +33,2 @@ fragment 2
+ context line
+-old line 4
++new line 6
+`, i)
+		}
+		for i := 0; i < 1000; i++ {
+			_, err := builder.WriteString(fileDiff(i))
+			if err != nil {
+				panic(err)
+			}
+		}
+		inputDiff = builder.String()
+	}
+	for i := 0; i < b.N; i++ {
+		reader := io.NopCloser(strings.NewReader(inputDiff))
+		ch, err := Parse(&exec.Cmd{}, reader)
+		if err != nil {
+			panic(err)
+		}
+		for range ch {
+		}
+	}
+}
+
 func newTestParser(input string, init bool) *parser {
 	p := newParser(bytes.NewBufferString(input))
 	if init {
 		_ = p.Next()
 	}
 	return p
+}
+
+func asTime(s string) time.Time {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		panic(err)
+	}
+	return t
 }
